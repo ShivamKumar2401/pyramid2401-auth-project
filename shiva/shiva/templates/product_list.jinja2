@@ -1,0 +1,337 @@
+{% extends "base.jinja2" %}
+{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Product List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+</head>
+<body>
+
+<div class="container mt-4">
+    
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Products</h3>
+
+    <button type="button"
+            class="btn btn-success"
+            data-bs-toggle="modal"
+            data-bs-target="#addProductModal">
+        + Add Product
+    </button>
+</div>
+
+</div>
+
+
+<div class="modal fade"
+     id="addProductModal"
+     tabindex="-1">
+
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title">Add</h5>
+        <button type="button"
+                class="btn-close btn-close-white"
+                data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <form method="post"
+              action="{{ request.route_url('product_form') }}"
+              enctype="multipart/form-data">
+
+            <div class="mb-3">
+                <label class="form-label">Name</label>
+                <input type="text"
+                       name="name"
+                       class="form-control"
+                       required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea name="description"
+                          class="form-control"
+                          rows="3"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Price</label>
+                <input type="number"
+                       step="0.01"
+                       name="price"
+                       class="form-control"
+                       required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Upload Image</label>
+                <input type="file"
+                       name="image"
+                       class="form-control"
+                       accept="image/*">
+            </div>
+
+            <div class="text-end">
+                <button type="submit"
+                        class="btn btn-success">
+                    Save
+                </button>
+            </div>
+
+        </form>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+    <table class="table table-bordered mt-3">
+        <thead class="table-dark">
+            <tr>
+               
+                <th>Name</th>
+                <th>Price</th>
+                <th>Description</th>
+                <th>Image</th>
+                <th>Actions</th>
+
+            </tr>
+        </thead>
+        <tbody>
+        {% for p in products %}
+<tr>
+   
+    <td>{{ p.name }}</td>
+    <td>{{ p.price }}</td>
+    <td>{{ p.description }}</td>
+    <td>
+    {% if p.image %}
+        <img
+            src="data:image/jpeg;base64,{{ p.image }}"
+            width="100"
+            height="100"
+            class="img-thumbnail"
+        >
+    {% else %}
+        No image
+    {% endif %}
+</td>
+    <td>
+        <button type="button"
+        class="btn btn-outline-warning"
+        data-bs-toggle="modal"
+        data-bs-target="#updateModal{{ p.id }}">
+        Edit
+        </button>
+        
+        
+        <div class="modal fade"
+     id="updateModal{{ p.id }}"
+     tabindex="-1">
+
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header">
+       <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title">Update </h5>
+       </div>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <form action="{{ request.route_url('product_update', id=p.id) }}"
+              method="post"
+              enctype="multipart/form-data">
+
+            <div class="mb-3">
+                <label>Name</label>
+                <input type="text"
+                       name="name"
+                       class="form-control"
+                       value="{{ p.name }}"
+                       required>
+            </div>
+
+            <div class="mb-3">
+                <label>Description</label>
+                <textarea name="description"
+                          class="form-control"
+                          required>{{ p.description }}</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label>Price</label>
+                <input type="number"
+                       step="0.01"
+                       name="price"
+                       class="form-control"
+                       value="{{ p.price }}"
+                       required>
+            </div>
+
+            <div class="mb-3">
+                <label>Current Image</label><br>
+                {% if p.image %}
+                    <img src="data:image/jpeg;base64,{{ p.image }}"
+                         width="120"
+                         class="img-thumbnail mb-2">
+                {% else %}
+                    No image
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label>Change Image</label>
+                <input type="file"
+                       name="image"
+                       class="form-control"
+                       accept="image/*">
+            </div>
+
+            <div class="text-end">
+                <button type="submit"
+                        class="btn btn-success">
+                    Update
+                </button>
+            </div>
+
+        </form>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<button type="button"
+        class="btn btn-outline-danger"
+        data-bs-toggle="modal"
+        data-bs-target="#deleteModal{{ p.id }}">
+    Delete
+</button>
+<div class="modal fade"
+     id="deleteModal{{ p.id }}"
+     tabindex="-1">
+
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title text-danger">Confirm Permanent Delete</h5>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        Are you sure you want to permanently delete
+        <strong>{{ p.name }}</strong> ?
+      </div>
+
+      <div class="modal-footer">
+
+        <button type="button"
+                class="btn btn-outline-secondary"
+                data-bs-dismiss="modal">
+            Cancel
+        </button>
+
+        <form action="{{ request.route_url('product_delete', id=p.id) }}"
+              method="post">
+            <button type="submit"
+                    class="btn btn-outline-danger">
+                Yes, Delete
+            </button>
+        </form>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+<button type="button"
+        class="btn btn-outline-secondary"
+        data-bs-toggle="modal"
+        data-bs-target="#softDeleteModal{{ p.id }}">
+    Soft Delete
+</button>
+<div class="modal fade"
+     id="softDeleteModal{{ p.id }}"
+     tabindex="-1">
+
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title text-secondary">Confirm Soft Delete</h5>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        Soft delete product
+        <strong>{{ p.name }}</strong> ?
+        <br>
+        <small class="text-muted">
+            (You can restore it later)
+        </small>
+      </div>
+
+      <div class="modal-footer">
+
+        <button type="button"
+                class="btn btn-outline-secondary"
+                data-bs-dismiss="modal">
+            Cancel
+        </button>
+
+        <form action="{{ request.route_url('product_soft_delete', id=p.id) }}"
+              method="post">
+            <button type="submit"
+                    class="btn btn-outline-dark">
+                Yes, Soft Delete
+            </button>
+        </form>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+    </td>
+    </tr>
+    {% else %}
+    
+    <tr>
+    <td colspan="6" class="text-center">No products found</td>
+    </tr>
+    {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+</body>
+{% include "footer.jinja2" %}
+</html>
+{% endblock %}
+       

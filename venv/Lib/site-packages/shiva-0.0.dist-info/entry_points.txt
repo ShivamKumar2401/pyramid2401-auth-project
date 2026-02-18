@@ -1,0 +1,5 @@
+[console_scripts]
+initialize_shiva_db = shiva.scripts.initialize_db:main
+
+[paste.app_factory]
+main = shiva:main

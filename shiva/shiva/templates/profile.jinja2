@@ -1,0 +1,122 @@
+{% extends "base.jinja2" %}
+
+{% block content %}
+
+<style>
+    
+
+    .profile-card {
+        width: 420px;
+        margin: auto;
+        background: #e07a5f;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+        color: white;
+        position: relative;
+    }
+
+    /* Top White Curved Section */
+    .top-section {
+        background: #f5f5f5;
+        height: 220px;
+        border-bottom-left-radius: 100% 60px;
+        border-bottom-right-radius: 100% 60px;
+        position: relative;
+        text-align: center;
+    }
+
+    /* Profile Image */
+    .profile-img {
+        position: absolute;
+        bottom: -60px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 50%;
+        border: 6px solid white;
+        width: 140px;
+        height: 140px;
+        object-fit: cover;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+
+    /* Bottom Dark Section */
+    .bottom-section {
+        padding: 90px 30px 40px 30px;
+        text-align: center;
+    }
+
+    .username {
+        font-size: 22px;
+        font-weight: bold;
+        color: #080808;
+    }
+
+    .email {
+        font-size: 14px;
+        color: #080808;
+        margin-bottom: 20px;
+    }
+
+    .info-box {
+        background: #1c1c1c;
+        padding: 12px;
+        border-radius: 10px;
+        margin-top: 10px;
+        font-size: 14px;
+    }
+
+    .back-btn {
+        margin-top: 25px;
+        padding: 8px 25px;
+        border-radius: 25px;
+        border: none;
+        background: #ff4d4d;
+        color: white;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+
+    .back-btn:hover {
+        background: #e60000;
+    }
+</style>
+
+<div class="profile-wrapper">
+
+    <div class="profile-card">
+
+        <!-- Top White Curve -->
+        <div class="top-section">
+
+            <img 
+                src="https://ui-avatars.com/api/?name={{ user.username }}&size=150"
+                class="profile-img"
+            >
+
+        </div>
+
+        <!-- Bottom Dark Section -->
+        <div class="bottom-section">
+
+            <div class="username">{{ user.username }}</div>
+            <div class="email">{{ user.email }}</div>
+
+            <div class="info-box">
+                <strong>User ID:</strong> {{ user.id }}
+            </div>
+
+            <button 
+                type="button"
+                class="back-btn"
+                onclick="window.location.href='{{ request.route_url('dashboard') }}'">
+                 Back 
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

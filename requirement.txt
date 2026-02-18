@@ -1,0 +1,11 @@
+pyramid==2.0
+pyramid_jinja2
+waitress
+sqlalchemy
+psycopg2-binary
+alembic
+pyramid_tm
+zope.sqlalchemy
+cookiecutter
+passlib[argon2]
+PyJWT
