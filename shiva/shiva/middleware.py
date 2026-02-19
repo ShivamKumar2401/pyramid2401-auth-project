@@ -1,4 +1,6 @@
 from .security import verify_token
+from jwt import ExpiredSignatureError, InvalidTokenError
+
 
 class AuthMiddleware:
 
@@ -10,7 +12,7 @@ class AuthMiddleware:
         path = environ.get("PATH_INFO", "")
 
         # Public routes
-        public_routes = ["/login", "/signup", "/static"]
+        public_routes = ["/login", "/signup", "/static", "/refresh"]
 
         if any(path.startswith(route) for route in public_routes):
             return self.app(environ, start_response)
@@ -24,11 +26,19 @@ class AuthMiddleware:
                 token = cookie.strip().split("=")[1]
 
         if token:
-            user_data = verify_token(token)
-            if user_data:
+            try:
+                user_data = verify_token(token)
                 environ["user"] = user_data
                 return self.app(environ, start_response)
 
-        # Redirect to login
+            except ExpiredSignatureError:
+                # Access token expired → redirect to refresh
+                start_response("302 Found", [("Location", "/refresh")])
+                return [b"Access expired. Redirecting to refresh..."]
+
+            except InvalidTokenError:
+                pass  # Invalid token → go to login
+
+        # No token or invalid token
         start_response("302 Found", [("Location", "/login")])
         return [b"Redirecting to login..."]

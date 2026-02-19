@@ -3,10 +3,21 @@ from pyramid.response import Response
 from sqlalchemy.exc import SQLAlchemyError
 from pyramid.httpexceptions import HTTPFound,HTTPNotFound
 from urllib3 import request
-from shiva.models import MyModel, User, Product
-from shiva.security import hash_password, verify_password, create_token, verify_token
+from shiva.models import MyModel, User, Product, RefreshToken
 import base64
 from sqlalchemy import or_
+# shiva/views.py
+
+
+from shiva.security import (
+    create_access_token,
+    create_refresh_token,
+    verify_token,
+    hash_password,
+    verify_password,
+)
+from datetime import datetime, timedelta
+
 
 
 def get_current_user(request):
@@ -102,22 +113,81 @@ def login_view(request):
         email = request.POST.get("email")
         password = request.POST.get("password")
 
-        # 🔎 Step 1: Find user by email
         user = request.dbsession.query(User).filter(User.email == email).first()
 
-        # Step 2: Verify password
         if user and verify_password(password, user.password):
-            token = create_token({"user_id": user.id})
+
+            access_token = create_access_token({"user_id": user.id})
+            refresh_token = create_refresh_token({"user_id": user.id})
+            
+
+            # Store refresh token in DB
+            refresh_entry = RefreshToken(
+                token=refresh_token,
+                user_id=user.id,
+                expires_at=datetime.utcnow() + timedelta(minutes=2)
+            )
+            request.dbsession.add(refresh_entry)
+
             response = HTTPFound(location=request.route_url("dashboard"))
-            response.set_cookie("token", token, httponly=True)
+            response.set_cookie("token", access_token, httponly=True)
+            response.set_cookie("refresh_token", refresh_token, httponly=True)
+
             return response
 
-        # If login fails
-        return {
-            "error": "Invalid email or password"
-        }
+        return {"error": "Invalid email or password"}
 
     return {}
+
+
+@view_config(route_name="refresh")
+def refresh_view(request):
+
+    refresh_token = request.cookies.get("refresh_token")
+
+    if not refresh_token:
+        return HTTPFound(location=request.route_url("login"))
+
+    # Find token in DB
+    stored_token = request.dbsession.query(RefreshToken).filter(
+        RefreshToken.token == refresh_token,
+        RefreshToken.is_revoked == False
+    ).first()
+
+    if not stored_token:
+        return HTTPFound(location=request.route_url("login"))
+
+    try:
+        payload = verify_token(refresh_token)
+        user_id = payload.get("user_id")
+
+    except:
+        return HTTPFound(location=request.route_url("login"))
+
+    # 🔥 ROTATION STARTS HERE
+
+    # 1️⃣ Revoke old token
+    stored_token.is_revoked = True
+
+    # 2️⃣ Issue new tokens
+    new_access = create_access_token({"user_id": user_id})
+    new_refresh = create_refresh_token({"user_id": user_id})
+
+    # 3️⃣ Store new refresh token
+    new_entry = RefreshToken(
+        token=new_refresh,
+        user_id=user_id,
+        expires_at=datetime.utcnow() + timedelta(minutes=2)
+    )
+
+    request.dbsession.add(new_entry)
+
+    response = HTTPFound(location=request.route_url("dashboard"))
+    response.set_cookie("token", new_access, httponly=True)
+    response.set_cookie("refresh_token", new_refresh, httponly=True)
+
+    return response
+
 
 
 @view_config(route_name="dashboard", renderer="templates/dashboard.jinja2")

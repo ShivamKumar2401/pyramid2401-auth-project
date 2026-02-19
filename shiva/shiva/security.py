@@ -1,10 +1,12 @@
 import jwt
-import datetime
+from datetime import datetime, timedelta
 from passlib.context import CryptContext
 import os
 SECRET_KEY = os.environ.get("JWT_SECRET", "very_long_random_secret_key_32_characters_minimum")
 
 ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 1
+REFRESH_TOKEN_EXPIRE_MINUTES = 2
 
 pwd_context = CryptContext(
     schemes=["argon2"],
@@ -17,15 +19,18 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
-def create_token(data: dict):
+def create_access_token(data):
     to_encode = data.copy()
-    expire = datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def verify_token(token: str):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except jwt.PyJWTError:
-        return None
+
+def create_refresh_token(data):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def verify_token(token):
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

@@ -6,11 +6,13 @@ from sqlalchemy import (
     String,
     Boolean,
     ForeignKey,
+    DateTime,
 )
 
 from .meta import Base
 from passlib.context import CryptContext#for password hashing, if needed in the future
-from sqlalchemy.orm import relationship#for defining relationships between tables, if needed in the future
+from sqlalchemy.orm import relationship #for defining relationships between tables, if needed in the future
+from datetime import datetime #for handling timestamps, if needed in the future
 
 class MyModel(Base):
     __tablename__ = 'models'
@@ -46,3 +48,14 @@ class Product(Base):
     is_deleted = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="products")
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(Integer, primary_key=True)
+    token = Column(String, nullable=False, unique=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    expires_at = Column(DateTime, nullable=False)
+    is_revoked = Column(Boolean, default=False)
+
+    user = relationship("User")    

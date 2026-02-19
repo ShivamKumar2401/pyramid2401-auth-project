@@ -15,4 +15,5 @@ def includeme(config):
     config.add_route('product_delete', '/product/{id}/delete')
     config.add_route('product_soft_delete', '/product/{id}/soft_delete')
     config.add_route('profile', '/profile')
+    config.add_route("refresh", "/refresh")
 
