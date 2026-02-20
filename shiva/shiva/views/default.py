@@ -125,7 +125,7 @@ def login_view(request):
             refresh_entry = RefreshToken(
                 token=refresh_token,
                 user_id=user.id,
-                expires_at=datetime.utcnow() + timedelta(minutes=2)
+                expires_at=datetime.utcnow() + timedelta(days=7)
             )
             request.dbsession.add(refresh_entry)
 
@@ -177,7 +177,7 @@ def refresh_view(request):
     new_entry = RefreshToken(
         token=new_refresh,
         user_id=user_id,
-        expires_at=datetime.utcnow() + timedelta(minutes=2)
+        expires_at=datetime.utcnow() + timedelta(days=7)
     )
 
     request.dbsession.add(new_entry)
@@ -209,9 +209,24 @@ def profile_view(request):
 
 @view_config(route_name="logout")
 def logout_view(request):
+
+    refresh_token = request.cookies.get("refresh_token")
+
+    if refresh_token:
+        stored_token = request.dbsession.query(RefreshToken).filter(
+            RefreshToken.token == refresh_token,
+            RefreshToken.is_revoked == False
+        ).first()
+
+        if stored_token:
+            stored_token.is_revoked = True  # ✅ Mark revoked
+
     response = HTTPFound(location="/login")
     response.delete_cookie("token")
+    response.delete_cookie("refresh_token")
+
     return response
+
 
 
 @view_config(route_name='product_form', renderer='templates/product_form.jinja2')
