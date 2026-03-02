@@ -6,6 +6,7 @@ from urllib3 import request
 from shiva.models import MyModel, User, Product, RefreshToken
 import base64
 from sqlalchemy import or_
+
 # shiva/views.py
 
 
@@ -21,18 +22,13 @@ from datetime import datetime, timedelta
 
 
 def get_current_user(request):
-    token = request.cookies.get("token")
+    user_data = request.environ.get("user")
 
-    if not token:
+    if not user_data:
         return None
 
-    try:
-        payload = verify_token(token)
-        user_id = payload.get("user_id")
-
-        return request.dbsession.query(User).get(user_id)
-    except:
-        return None
+    user_id = user_data.get("user_id")
+    return request.dbsession.query(User).get(user_id)
 
 
 @view_config(route_name='home')
@@ -119,9 +115,7 @@ def login_view(request):
 
             access_token = create_access_token({"user_id": user.id})
             refresh_token = create_refresh_token({"user_id": user.id})
-            
 
-            # Store refresh token in DB
             refresh_entry = RefreshToken(
                 token=refresh_token,
                 user_id=user.id,
@@ -130,15 +124,30 @@ def login_view(request):
             request.dbsession.add(refresh_entry)
 
             response = HTTPFound(location=request.route_url("dashboard"))
-            response.set_cookie("token", access_token, httponly=True)
-            response.set_cookie("refresh_token", refresh_token, httponly=True)
+
+            response.set_cookie(
+                "token",
+                access_token,
+                httponly=True,
+                secure=False,  # True in HTTPS
+                samesite="Strict",
+                max_age=600
+            )
+
+            response.set_cookie(
+                "refresh_token",
+                refresh_token,
+                httponly=True,
+                secure=False,
+                samesite="Strict",
+                max_age=7*24*60*60
+            )
 
             return response
 
         return {"error": "Invalid email or password"}
 
     return {}
-
 
 @view_config(route_name="refresh")
 def refresh_view(request):

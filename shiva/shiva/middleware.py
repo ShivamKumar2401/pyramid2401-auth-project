@@ -1,4 +1,4 @@
-from .security import verify_token
+from .security import verify_token, create_access_token
 from jwt import ExpiredSignatureError, InvalidTokenError
 
 
@@ -11,13 +11,11 @@ class AuthMiddleware:
 
         path = environ.get("PATH_INFO", "")
 
-        # Public routes
-        public_routes = ["/login", "/signup", "/static", "/refresh"]
+        public_routes = ["/login", "/signup", "/refresh", "/static"]
 
         if any(path.startswith(route) for route in public_routes):
             return self.app(environ, start_response)
 
-        # Read cookies
         cookies = environ.get("HTTP_COOKIE", "")
         token = None
 
@@ -27,18 +25,31 @@ class AuthMiddleware:
 
         if token:
             try:
-                user_data = verify_token(token)
-                environ["user"] = user_data
-                return self.app(environ, start_response)
+                payload = verify_token(token)
+
+                # ✅ CREATE NEW ACCESS TOKEN EVERY REQUEST
+                new_access_token = create_access_token({
+                    "user_id": payload["user_id"]
+                })
+
+                def custom_start_response(status, headers, exc_info=None):
+                    headers.append((
+                        "Set-Cookie",
+                        f"token={new_access_token}; "
+                        f"HttpOnly; Path=/; SameSite=Strict; Max-Age=600"
+                    ))
+                    return start_response(status, headers, exc_info)
+
+                environ["user"] = payload
+
+                return self.app(environ, custom_start_response)
 
             except ExpiredSignatureError:
-                # Access token expired → redirect to refresh
                 start_response("302 Found", [("Location", "/refresh")])
-                return [b"Access expired. Redirecting to refresh..."]
+                return [b"Access expired"]
 
             except InvalidTokenError:
-                pass  # Invalid token → go to login
+                pass
 
-        # No token or invalid token
         start_response("302 Found", [("Location", "/login")])
-        return [b"Redirecting to login..."]
+        return [b"Redirecting to login"]
